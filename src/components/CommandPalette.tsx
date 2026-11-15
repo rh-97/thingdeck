@@ -149,6 +149,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
             placeholder="Type a device, scene or action — e.g. “lock”, “movie”"
             className="h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-subtle"
             role="combobox"
+            aria-label="Search commands"
             aria-expanded="true"
             aria-controls="palette-list"
             aria-activedescendant={filtered[active]?.id}

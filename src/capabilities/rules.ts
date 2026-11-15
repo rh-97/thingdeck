@@ -10,6 +10,8 @@ export interface TriggerOption {
   kind: 'enum' | 'number';
   options?: string[];
   unit?: string;
+  /** Sensible starting threshold for numeric triggers. */
+  defaultValue?: number;
 }
 
 export const TRIGGERS: TriggerOption[] = [
@@ -51,6 +53,7 @@ export const TRIGGERS: TriggerOption[] = [
     label: 'Temperature',
     kind: 'number',
     unit: '°C',
+    defaultValue: 25,
   },
   {
     capability: 'relativeHumidityMeasurement',
@@ -58,6 +61,7 @@ export const TRIGGERS: TriggerOption[] = [
     label: 'Humidity',
     kind: 'number',
     unit: '%',
+    defaultValue: 60,
   },
   {
     capability: 'carbonDioxideMeasurement',
@@ -65,16 +69,32 @@ export const TRIGGERS: TriggerOption[] = [
     label: 'CO₂',
     kind: 'number',
     unit: 'ppm',
+    defaultValue: 1000,
   },
-  { capability: 'powerMeter', attribute: 'power', label: 'Power draw', kind: 'number', unit: 'W' },
+  {
+    capability: 'powerMeter',
+    attribute: 'power',
+    label: 'Power draw',
+    kind: 'number',
+    unit: 'W',
+    defaultValue: 100,
+  },
   {
     capability: 'illuminanceMeasurement',
     attribute: 'illuminance',
     label: 'Light level',
     kind: 'number',
     unit: 'lux',
+    defaultValue: 50,
   },
-  { capability: 'battery', attribute: 'battery', label: 'Battery', kind: 'number', unit: '%' },
+  {
+    capability: 'battery',
+    attribute: 'battery',
+    label: 'Battery',
+    kind: 'number',
+    unit: '%',
+    defaultValue: 20,
+  },
 ];
 
 export interface ActionOption {
@@ -122,6 +142,11 @@ export const ACTIONS: ActionOption[] = [
     label: 'Start cleaning',
   },
 ];
+
+/** Lower-cases a label for use mid-sentence, keeping acronyms such as CO₂ intact. */
+export function lowerLabel(label: string) {
+  return /^[A-Z]{2}/.test(label) ? label : label.toLowerCase();
+}
 
 export const triggersFor = (device: Device) => TRIGGERS.filter((t) => has(device, t.capability));
 export const actionsFor = (device: Device) => ACTIONS.filter((a) => has(device, a.capability));
@@ -211,7 +236,7 @@ const OPERATOR_TEXT = { equals: 'is', greaterThan: 'rises above', lessThan: 'dro
 function operandText(operand: RuleOperand, devices: Map<string, Device>) {
   if ('device' in operand) {
     const d = devices.get(operand.device.devices[0] ?? '');
-    return `${d ? deviceLabel(d) : 'a device'} ${attributeLabel(operand.device.attribute).toLowerCase()}`;
+    return `${d ? deviceLabel(d) : 'a device'} ${lowerLabel(attributeLabel(operand.device.attribute))}`;
   }
   if ('string' in operand) return RULE_VALUES[operand.string] ?? formatValue(operand.string).toLowerCase();
   if ('integer' in operand) return String(operand.integer);

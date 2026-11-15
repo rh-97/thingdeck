@@ -171,7 +171,6 @@ export default function Energy() {
                   axisLine={false}
                   tickLine={false}
                   width={40}
-                  unit=" kWh"
                 />
                 <Tooltip
                   cursor={{ fill: colors.line, opacity: 0.4 }}

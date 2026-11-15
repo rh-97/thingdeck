@@ -67,6 +67,7 @@ test('automation builder', async ({ page }) => {
   await page.getByRole('button', { name: 'New automation' }).first().click();
   const dialog = page.getByRole('dialog');
   await dialog.locator('#trigger-device').selectOption({ label: 'Air Quality Monitor' });
+  await dialog.locator('#trigger-attr').selectOption('carbonDioxideMeasurement.carbonDioxide');
   await dialog.locator('#action-device').selectOption({ label: 'Air Purifier' });
   await dialog.getByText('Request body (POST /rules)').click();
   await page.waitForTimeout(300);
@@ -87,7 +88,7 @@ test('command palette', async ({ page }) => {
   await page.goto('/');
   await settle(page);
   await page.keyboard.press('ControlOrMeta+k');
-  await page.getByRole('combobox').fill('lock');
+  await page.getByRole('combobox', { name: 'Search commands' }).fill('lock');
   await page.waitForTimeout(300);
   await page.screenshot({ path: out('command-palette') });
 });

@@ -21,7 +21,7 @@ test.describe('demo home', () => {
     await page.goto('/');
     await expect(page.getByText('Devices online')).toBeVisible();
     await page.keyboard.press('ControlOrMeta+k');
-    await page.getByRole('combobox').fill('movie');
+    await page.getByRole('combobox', { name: 'Search commands' }).fill('movie');
     await page.keyboard.press('Enter');
     await expect(page.getByText('Movie Night is running')).toBeVisible();
   });

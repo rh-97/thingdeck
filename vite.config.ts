@@ -26,8 +26,6 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    // "app" is the compose service name the Playwright container uses.
-    allowedHosts: ['app'],
     proxy: smartThingsProxy,
     watch: process.env.VITE_USE_POLLING === 'true' ? { usePolling: true, interval: 300 } : undefined,
   },

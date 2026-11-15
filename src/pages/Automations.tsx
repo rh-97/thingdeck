@@ -9,6 +9,7 @@ import {
   actionsFor,
   buildRule,
   describeRule,
+  lowerLabel,
   triggersFor,
   type RuleDraft,
 } from '@/capabilities/rules';
@@ -170,7 +171,7 @@ function RuleBuilder({ open, onClose, devices }: { open: boolean; onClose: () =>
 
   const autoName =
     trigger && triggerDevice && action && actionDevice
-      ? `${deviceLabel(triggerDevice)} ${trigger.label.toLowerCase()} ${draft.trigger.operator === 'equals' ? formatValue(draft.trigger.value).toLowerCase() : `${draft.trigger.operator === 'greaterThan' ? '>' : '<'} ${draft.trigger.value}`} → ${action.label.toLowerCase()} ${deviceLabel(actionDevice)}`
+      ? `${deviceLabel(triggerDevice)} ${lowerLabel(trigger.label)} ${draft.trigger.operator === 'equals' ? formatValue(draft.trigger.value).toLowerCase() : `${draft.trigger.operator === 'greaterThan' ? '>' : '<'} ${draft.trigger.value}`} → ${action.label.toLowerCase()} ${deviceLabel(actionDevice)}`
       : '';
   const name = nameTouched ? draft.name : autoName;
 
@@ -207,7 +208,7 @@ function RuleBuilder({ open, onClose, devices }: { open: boolean; onClose: () =>
         capability: first?.capability ?? '',
         attribute: first?.attribute ?? '',
         operator: first?.kind === 'number' ? 'greaterThan' : 'equals',
-        value: first?.options?.[0] ?? '',
+        value: first?.options?.[0] ?? String(first?.defaultValue ?? ''),
       },
     }));
   };
@@ -275,7 +276,7 @@ function RuleBuilder({ open, onClose, devices }: { open: boolean; onClose: () =>
                       capability: t.capability,
                       attribute: t.attribute,
                       operator: t.kind === 'number' ? 'greaterThan' : 'equals',
-                      value: t.options?.[0] ?? '',
+                      value: t.options?.[0] ?? String(t.defaultValue ?? ''),
                     },
                   }));
                 }}
