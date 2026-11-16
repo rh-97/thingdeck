@@ -1,5 +1,5 @@
 {
-  "name": "thingdeck",
+  "name": "thingsdeck",
   "private": true,
   "version": "0.1.0",
   "description": "An unofficial, mock-first web console for SmartThings homes. Runs fully offline with a simulated home, or against your own account with a personal access token.",

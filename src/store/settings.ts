@@ -32,7 +32,7 @@ export interface SettingsState {
   setEnergyRate: (rate: number, currency?: string) => void;
 }
 
-const SESSION_TOKEN_KEY = 'thingdeck.token';
+const SESSION_TOKEN_KEY = 'thingsdeck.token';
 
 export const useSettings = create<SettingsState>()(
   persist(
@@ -75,7 +75,7 @@ export const useSettings = create<SettingsState>()(
       setEnergyRate: (energyRate, currency) => set({ energyRate, ...(currency ? { currency } : {}) }),
     }),
     {
-      name: 'thingdeck.settings',
+      name: 'thingsdeck.settings',
       version: 1,
       storage: createJSONStorage(() => ({
         getItem: (key) => local.get(key),

@@ -7,7 +7,7 @@ export function Logo() {
         <circle cx="16" cy="16.5" r="1.6" fill="var(--accent)" />
       </svg>
       <div className="leading-tight">
-        <div className="text-[15px] font-semibold tracking-tight">ThingDeck</div>
+        <div className="text-[15px] font-semibold tracking-tight">ThingsDeck</div>
         <div className="text-[11px] text-subtle">SmartThings console</div>
       </div>
     </div>

@@ -6,15 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="ThingDeck — an unofficial web console for SmartThings homes, with a fully simulated demo home."
+      content="ThingsDeck — an unofficial web console for SmartThings homes, with a fully simulated demo home."
     />
     <meta name="theme-color" content="#0f172a" />
-    <title>ThingDeck</title>
+    <title>ThingsDeck</title>
     <script>
       // Apply the saved theme before first paint to avoid a flash.
       (function () {
         try {
-          var s = JSON.parse(localStorage.getItem('thingdeck.settings') || '{}');
+          var s = JSON.parse(localStorage.getItem('thingsdeck.settings') || '{}');
           var t = (s.state && s.state.theme) || 'system';
           var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
           document.documentElement.classList.toggle('dark', dark);

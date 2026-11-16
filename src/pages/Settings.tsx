@@ -286,7 +286,7 @@ export default function SettingsPage() {
       </Card>
 
       <p className="pb-4 text-xs text-subtle">
-        ThingDeck is an independent open-source project. It is not affiliated with, endorsed by, or sponsored
+        ThingsDeck is an independent open-source project. It is not affiliated with, endorsed by, or sponsored
         by Samsung or SmartThings. SmartThings is a trademark of its respective owner.
       </p>
     </div>

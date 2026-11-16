@@ -1,4 +1,4 @@
-name: thingdeck
+name: thingsdeck
 
 # All Node tooling runs inside containers; nothing is installed on the host.
 # node_modules lives in a named volume so host and container never share it.
@@ -7,9 +7,9 @@ services:
     build:
       context: .
       target: dev
-    image: thingdeck-dev
+    image: thingsdeck-dev
     ports:
-      - '127.0.0.1:${THINGDECK_PORT:-5180}:5173'
+      - '127.0.0.1:${THINGSDECK_PORT:-5180}:5173'
     volumes:
       - .:/app
       - node_modules:/app/node_modules
@@ -37,9 +37,9 @@ services:
     build:
       context: .
       target: prod
-    image: thingdeck
+    image: thingsdeck
     ports:
-      - '127.0.0.1:${THINGDECK_PROD_PORT:-8080}:8080'
+      - '127.0.0.1:${THINGSDECK_PROD_PORT:-8080}:8080'
 
 volumes:
   node_modules:

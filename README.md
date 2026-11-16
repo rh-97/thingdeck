@@ -2,19 +2,19 @@
 
 <img src="public/favicon.svg" width="64" height="64" alt="" />
 
-# ThingDeck
+# ThingsDeck
 
 **A fast, capability-driven web console for SmartThings homes.**
 Runs fully offline against a simulated two-location home. Or point it at your own SmartThings account with a personal access token.
 
-[![CI](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
+[![CI](https://github.com/rh-97/thingsdeck/actions/workflows/ci.yml/badge.svg)](https://github.com/rh-97/thingsdeck/actions/workflows/ci.yml)
 ![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 ![Docker](https://img.shields.io/badge/dev-100%25_Docker-2496ED?logo=docker&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
-<img src="docs/screenshots/dashboard-dark.png" alt="ThingDeck dashboard in dark mode" width="100%" />
+<img src="docs/screenshots/dashboard-dark.png" alt="ThingsDeck dashboard in dark mode" width="100%" />
 
 </div>
 
@@ -22,7 +22,7 @@ Runs fully offline against a simulated two-location home. Or point it at your ow
 
 ## Why this exists
 
-SmartThings already has an excellent mobile app. ThingDeck is a **portfolio project** that explores what a _desktop-class_ console for the same platform could look like, built only on the **public** SmartThings REST API:
+SmartThings already has an excellent mobile app. ThingsDeck is a **portfolio project** that explores what a _desktop-class_ console for the same platform could look like, built only on the **public** SmartThings REST API:
 
 - See the whole home at once: health, alerts, power, live activity.
 - Drive any device from a UI generated from its **capabilities**, not hard-coded per model.
@@ -31,7 +31,7 @@ SmartThings already has an excellent mobile app. ThingDeck is a **portfolio proj
 
 It runs **without an account, hardware, or a paid API plan**. The demo home is a full in-browser simulation, so anyone can clone it and click around in under a minute.
 
-> ThingDeck is an independent open-source project. It is not affiliated with, endorsed by, or sponsored by Samsung or SmartThings.
+> ThingsDeck is an independent open-source project. It is not affiliated with, endorsed by, or sponsored by Samsung or SmartThings.
 
 ## Features
 
@@ -73,7 +73,7 @@ It runs **without an account, hardware, or a paid API plan**. The demo home is a
 Everything runs in Docker. Nothing gets installed on your machine except Docker itself.
 
 ```bash
-git clone <this repo> && cd <this repo>
+git clone https://github.com/rh-97/thingsdeck.git && cd thingsdeck
 make dev            # → http://localhost:5180
 ```
 
@@ -89,18 +89,18 @@ Other targets (`make help` lists them all):
 | `make prod`        | Builds the nginx image and serves it on http://localhost:8080 |
 | `make shell`       | Shell inside the dev container                                |
 
-`node_modules` lives in a named Docker volume, so the host and the container never share binaries. Change the port with `THINGDECK_PORT=5200 make dev`.
+`node_modules` lives in a named Docker volume, so the host and the container never share binaries. Change the port with `THINGSDECK_PORT=5200 make dev`.
 
 ## Using your own SmartThings account (optional)
 
 1. Create a token at **[account.smartthings.com/tokens](https://account.smartthings.com/tokens)** with the scopes
    `r:devices:* x:devices:* r:locations:* x:locations:* r:scenes:* x:scenes:* r:rules:* w:rules:*`.
-2. In ThingDeck, open **Settings → Personal access token**, paste it and press **Connect**.
+2. In ThingsDeck, open **Settings → Personal access token**, paste it and press **Connect**.
 
 Notes:
 
 - **Free.** Personal access tokens don't need the paid SmartThings Developer Plan, which covers OAuth "API Access" apps. SmartThings describes PATs as meant for personal testing and light scripts, which is exactly this use.
-- **Tokens created after Dec 2024 expire after 24 hours.** ThingDeck detects the `401` and asks for a fresh one.
+- **Tokens created after Dec 2024 expire after 24 hours.** ThingsDeck detects the `401` and asks for a fresh one.
 - **Requests go through a same-origin proxy** (`/st-api → https://api.smartthings.com/v1`): Vite's proxy in dev, nginx in the production image. The SmartThings API doesn't allow browser CORS, so the static GitHub Pages build is demo-only.
 - The token stays in `sessionStorage` unless you tick _Remember on this device_, and it's never logged.
 - Live mode polls conservatively (status every 30–60 s, at most 4 requests in flight) to stay well inside the [rate limits](https://developer.smartthings.com/docs/getting-started/rate-limits).

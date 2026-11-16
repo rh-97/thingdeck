@@ -2,7 +2,7 @@
 function safe(kind: 'localStorage' | 'sessionStorage'): Storage | undefined {
   try {
     const storage = globalThis[kind];
-    const probe = '__thingdeck_probe__';
+    const probe = '__thingsdeck_probe__';
     storage.setItem(probe, probe);
     storage.removeItem(probe);
     return storage;

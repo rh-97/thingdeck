@@ -15,7 +15,7 @@ async function settle(page: Page) {
 
 async function setTheme(page: Page, theme: 'light' | 'dark') {
   await page.addInitScript((t) => {
-    localStorage.setItem('thingdeck.settings', JSON.stringify({ state: { theme: t }, version: 1 }));
+    localStorage.setItem('thingsdeck.settings', JSON.stringify({ state: { theme: t }, version: 1 }));
   }, theme);
 }
 
