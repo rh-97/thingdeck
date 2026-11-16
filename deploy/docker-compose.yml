@@ -1,0 +1,30 @@
+# ThingsDeck for a server PC: runs pre-built images (from `make bundle`), builds nothing.
+name: thingsdeck
+
+services:
+  # nginx: serves the web app and forwards /api to the server.
+  web:
+    image: thingsdeck:latest
+    restart: unless-stopped
+    depends_on: [api]
+    ports:
+      - '${THINGSDECK_BIND:-0.0.0.0}:${THINGSDECK_PROD_PORT:-8080}:8080'
+
+  # Accounts, sessions, encrypted SmartThings tokens and the SmartThings proxy.
+  api:
+    image: thingsdeck-server:latest
+    restart: unless-stopped
+    volumes:
+      - data:/data
+      # Optional company CA certificates (binary or text) for HTTPS-inspecting networks.
+      - ./certs:/certs:ro
+    environment:
+      - THINGSDECK_SECRET=${THINGSDECK_SECRET:-}
+      - THINGSDECK_SIGNUP=${THINGSDECK_SIGNUP:-open}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-}
+
+volumes:
+  # Accounts, preferences and the token-encryption key. Back this up.
+  data:

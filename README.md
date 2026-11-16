@@ -88,15 +88,16 @@ You only need **one** of `make prod` or `make dev`. Use `make prod` to _use_ Thi
 
 Other targets (`make help` lists them all):
 
-| Command            | What it does                                                          |
-| ------------------ | --------------------------------------------------------------------- |
-| `make dev`         | Vite dev server with hot reload + API server, in `node:24` containers |
-| `make test`        | Vitest unit and component tests                                       |
-| `make check`       | Typecheck, lint, tests and production build (what CI runs)            |
-| `make e2e`         | Playwright smoke tests in the official Playwright image               |
-| `make screenshots` | Regenerates every image in this README                                |
-| `make prod`        | Builds the nginx + API server images and serves http://localhost:8080 |
-| `make shell`       | Shell inside the dev container                                        |
+| Command            | What it does                                                           |
+| ------------------ | ---------------------------------------------------------------------- |
+| `make dev`         | Vite dev server with hot reload + API server, in `node:24` containers  |
+| `make test`        | Vitest unit and component tests                                        |
+| `make check`       | Typecheck, lint, tests and production build (what CI runs)             |
+| `make e2e`         | Playwright smoke tests in the official Playwright image                |
+| `make screenshots` | Regenerates every image in this README                                 |
+| `make bundle`      | Packages pre-built images for a Linux server (`ARCH=amd64` or `arm64`) |
+| `make prod`        | Builds the nginx + API server images and serves http://localhost:8080  |
+| `make shell`       | Shell inside the dev container                                         |
 
 `node_modules` lives in a named Docker volume, so the host and the container never share binaries. Change the port with `THINGSDECK_PORT=5200 make dev`.
 
@@ -145,6 +146,23 @@ The `server/` folder is a small Fastify service (Node 24 runs its TypeScript dir
 
 The GitHub Pages build (`VITE_STATIC_DEMO=true`) has no server, so it skips accounts and is demo-only.
 
+## Deploying to a Linux server
+
+Build once on your own machine and copy the result, so a slow server never compiles anything:
+
+```bash
+make bundle ARCH=amd64   # or ARCH=arm64 — check the server with `uname -m`
+```
+
+`./bundle` then holds the images, a standalone `docker-compose.yml`, `.env.example` (listening on the network by default) and an empty `certs/` folder. Copy the folder to the server and follow `bundle/README.md`: `docker load`, then `docker compose up -d`. Idle, ThingsDeck uses about 115 MB of RAM and almost no CPU.
+
+### Company networks
+
+- **HTTPS inspection:** if your network uses its own root certificate, drop it into `certs/`. Binary (`.cer`, `.der`) or text (`.crt`, `.pem`) both work. The server trusts it on start and logs `Trusting extra CA from …`.
+- **Proxy:** only if your network requires one, set `HTTPS_PROXY` (and optionally `NO_PROXY`) in `.env`.
+
+Both are optional and do nothing when unset.
+
 ## Architecture
 
 ```mermaid
@@ -190,13 +208,14 @@ src/
 ├─ pages/          one file per route (lazy-loaded)
 ├─ store/          settings (synced to the account), toasts, activity log
 └─ lib/            time-series maths, CSV, storage, helpers
-server/            Fastify API: accounts, sessions, preferences, encrypted tokens, SmartThings proxy
+server/            Fastify API: accounts, sessions, preferences, encrypted tokens, SmartThings proxy, CA/proxy launcher
+deploy/            Standalone compose file and guide used by `make bundle`
 e2e/               Playwright smoke + account journeys, README screenshot generator
 ```
 
 ## Testing
 
-- **Server:** registration and login, rate limiting, session expiry, closed sign-up, CSRF guard, per-account preferences, token validation and encryption at rest, the SmartThings proxy, expiry detection, password change and account deletion (Fastify `inject` with an in-memory database).
+- **Server:** registration and login, rate limiting, session expiry, closed sign-up, CSRF guard, per-account preferences, token validation and encryption at rest, the SmartThings proxy, expiry detection, password change and account deletion (Fastify `inject` with an in-memory database), plus loading binary and text company CAs and proving an HTTPS connection is trusted only with the CA.
 - **Unit:** engine behaviour (commands, rules, scenes, washer cycle, determinism, plausible sensor ranges), REST client (cookies not tokens, pagination, error mapping, concurrency), optimistic updates, time-series integration, rule builder.
 - **Component:** Testing Library against a latency-free demo home (toggle a light, search, confirm before unlocking).
 - **E2E:** Playwright drives the real app: sign-in redirect, register → choose demo → sign out and back in, wrong-password error, live mode without a token, dashboard, toggles, command palette, simulated motion firing an automation, building a rule, and an error-free render of every route.

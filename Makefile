@@ -2,7 +2,7 @@
 DC  := docker compose
 RUN := $(DC) run --rm --no-deps app
 
-.PHONY: help install dev stop test coverage lint typecheck format build check prod e2e screenshots shell clean
+.PHONY: help install dev stop test coverage lint typecheck format build check prod bundle e2e screenshots shell clean
 
 help: ## Show available targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -39,6 +39,17 @@ check: ## Everything CI runs
 
 prod: ## Build and serve the nginx image on http://localhost:8080
 	$(DC) --profile prod up --build prod
+
+ARCH ?= amd64
+bundle: ## Package pre-built images for a Linux server into ./bundle (ARCH=amd64|arm64)
+	rm -rf bundle && mkdir -p bundle/certs
+	docker buildx build --platform linux/$(ARCH) --target prod -t thingsdeck:latest --load .
+	docker buildx build --platform linux/$(ARCH) --target server -t thingsdeck-server:latest --load .
+	docker save thingsdeck:latest thingsdeck-server:latest | gzip > bundle/thingsdeck-images.tar.gz
+	cp deploy/docker-compose.yml deploy/README.md bundle/
+	cp certs/README.md bundle/certs/
+	sed 's/^THINGSDECK_BIND=127.0.0.1/THINGSDECK_BIND=0.0.0.0/' .env.example > bundle/.env.example
+	@echo "\nBundle ready in ./bundle for linux/$(ARCH). Copy the folder to the server and follow bundle/README.md."
 
 e2e: ## Run Playwright smoke tests against the dev server (in a Playwright container)
 	./scripts/e2e.sh

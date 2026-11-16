@@ -1,0 +1,1 @@
+Test-only certificates for `server/certs.test.ts`: a throwaway root CA (as PEM text and binary DER, like corporate CAs are often shipped) and a `localhost` server certificate signed by it. The CA's private key was discarded. Never trust these anywhere else.

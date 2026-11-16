@@ -23,13 +23,17 @@ services:
   # Account/session API for `make dev`, restarted automatically when server/ changes.
   server:
     image: thingsdeck-dev
-    command: ['node', '--watch-path=server', '--disable-warning=ExperimentalWarning', 'server/index.ts']
+    command: ['node', '--watch-path=server', 'server/start.ts']
     volumes:
       - .:/app
       - node_modules:/app/node_modules
       - dev_data:/data
+      - ./certs:/certs:ro
     environment:
       - DATA_DIR=/data
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-}
       - THINGSDECK_SECRET=${THINGSDECK_SECRET:-}
       - THINGSDECK_SIGNUP=${THINGSDECK_SIGNUP:-open}
 
@@ -69,9 +73,14 @@ services:
     restart: unless-stopped
     volumes:
       - data:/data
+      # Optional company CA certificates (binary or text) for HTTPS-inspecting networks.
+      - ./certs:/certs:ro
     environment:
       - THINGSDECK_SECRET=${THINGSDECK_SECRET:-}
       - THINGSDECK_SIGNUP=${THINGSDECK_SIGNUP:-open}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-}
 
 volumes:
   node_modules:
