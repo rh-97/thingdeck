@@ -26,6 +26,8 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    // Allow Bonjour names like my-mac.local when the dev server is shared on the LAN (IPs are always allowed).
+    allowedHosts: ['.local'],
     proxy: smartThingsProxy,
     watch: process.env.VITE_USE_POLLING === 'true' ? { usePolling: true, interval: 300 } : undefined,
   },

@@ -1,5 +1,6 @@
 name: thingsdeck
 
+# Ports bind to 127.0.0.1 unless THINGSDECK_BIND is set (e.g. 0.0.0.0 in .env to share on your LAN).
 # All Node tooling runs inside containers; nothing is installed on the host.
 # node_modules lives in a named volume so host and container never share it.
 services:
@@ -9,7 +10,7 @@ services:
       target: dev
     image: thingsdeck-dev
     ports:
-      - '127.0.0.1:${THINGSDECK_PORT:-5180}:5173'
+      - '${THINGSDECK_BIND:-127.0.0.1}:${THINGSDECK_PORT:-5180}:5173'
     volumes:
       - .:/app
       - node_modules:/app/node_modules
@@ -39,7 +40,7 @@ services:
       target: prod
     image: thingsdeck
     ports:
-      - '127.0.0.1:${THINGSDECK_PROD_PORT:-8080}:8080'
+      - '${THINGSDECK_BIND:-127.0.0.1}:${THINGSDECK_PROD_PORT:-8080}:8080'
 
 volumes:
   node_modules:

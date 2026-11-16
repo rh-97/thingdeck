@@ -91,6 +91,18 @@ Other targets (`make help` lists them all):
 
 `node_modules` lives in a named Docker volume, so the host and the container never share binaries. Change the port with `THINGSDECK_PORT=5200 make dev`.
 
+### Sharing on your network
+
+By default the containers only listen on `127.0.0.1`. To let other devices on your LAN use ThingsDeck, copy `.env.example` to `.env` and set:
+
+```bash
+THINGSDECK_BIND=0.0.0.0
+```
+
+Then run `make prod` (or `make dev`) and open `http://<this-machine's-IP>:8080` (or `:5180`) from any device. macOS may ask once to allow incoming connections for Docker.
+
+Each visitor's browser keeps its own demo home, preferences and token. The server stores nothing and only forwards API calls, so several people can connect different SmartThings accounts at once. Over plain HTTP, tokens cross your LAN unencrypted on the way to the server, so use this on a network you trust, or put it behind an HTTPS reverse proxy.
+
 ## Using your own SmartThings account (optional)
 
 1. Create a token at **[account.smartthings.com/tokens](https://account.smartthings.com/tokens)** with the scopes
