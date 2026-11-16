@@ -6,6 +6,8 @@ import { ClientContext, getDemoClient, useDemoVersion } from './clientContext';
 import { LiveClient } from './live/liveClient';
 import { MockClient } from './mock/mockClient';
 
+const AUTH_QUERY_ROOTS = new Set(['me', 'auth-config']);
+
 export function ClientProvider({
   children,
   client: override,
@@ -33,7 +35,8 @@ export function ClientProvider({
   useEffect(() => {
     if (previous.current === client) return;
     previous.current = client;
-    queryClient.resetQueries();
+    // Only home data belongs to a backend; the session and auth config don't.
+    queryClient.resetQueries({ predicate: (query) => !AUTH_QUERY_ROOTS.has(String(query.queryKey[0])) });
   }, [client, queryClient]);
 
   useEffect(() => {

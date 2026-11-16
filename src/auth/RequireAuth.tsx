@@ -27,7 +27,9 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   }, [me.data]);
 
   useEffect(() => {
-    useSettings.getState().setLiveReady(me.data?.live.status === 'valid');
+    // Only react to real answers: "still loading" must not flip live mode off,
+    // or switching backends would refetch the session and loop.
+    if (me.data) useSettings.getState().setLiveReady(me.data.live.status === 'valid');
   }, [me.data]);
 
   usePreferenceSync(userId, hydrated);
