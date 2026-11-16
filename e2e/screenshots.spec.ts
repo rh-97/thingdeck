@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { signUp } from './helpers';
 
 /**
  * Regenerates the README screenshots. Skipped unless SCREENSHOTS=1
@@ -14,9 +15,7 @@ async function settle(page: Page) {
 }
 
 async function setTheme(page: Page, theme: 'light' | 'dark') {
-  await page.addInitScript((t) => {
-    localStorage.setItem('thingsdeck.settings', JSON.stringify({ state: { theme: t }, version: 1 }));
-  }, theme);
+  await signUp(page, { theme });
 }
 
 test('dashboard (dark)', async ({ page }) => {
@@ -93,8 +92,27 @@ test('command palette', async ({ page }) => {
   await page.screenshot({ path: out('command-palette') });
 });
 
+test('sign in', async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem('thingsdeck.settings', JSON.stringify({ state: { theme: 'dark' }, version: 2 })),
+  );
+  await page.goto('/login');
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+  await settle(page);
+  await page.screenshot({ path: out('sign-in') });
+});
+
+test('welcome choice', async ({ page }) => {
+  await signUp(page, { mode: null, theme: 'dark' });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: /Welcome/ })).toBeVisible();
+  await settle(page);
+  await page.screenshot({ path: out('welcome') });
+});
+
 test('mobile', async ({ browser }) => {
   const context = await browser.newContext({
+    baseURL: test.info().project.use.baseURL,
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
     isMobile: true,

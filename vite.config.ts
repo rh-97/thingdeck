@@ -4,17 +4,12 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 
 /**
- * Live mode talks to the SmartThings REST API through a same-origin proxy so the
- * browser never needs CORS access to api.smartthings.com. The same path is
- * proxied by nginx in the production Docker image (see nginx.conf).
+ * The browser only ever talks to /api on its own origin. The ThingsDeck server
+ * (server/) handles accounts and forwards /api/st/* to SmartThings with the
+ * user's stored token. nginx does the same forwarding in production.
  */
-const smartThingsProxy = {
-  '/st-api': {
-    target: 'https://api.smartthings.com',
-    changeOrigin: true,
-    secure: true,
-    rewrite: (path: string) => path.replace(/^\/st-api/, '/v1'),
-  },
+const apiProxy = {
+  '/api': { target: process.env.VITE_API_TARGET ?? 'http://localhost:3000', changeOrigin: false },
 };
 
 export default defineConfig({
@@ -28,12 +23,12 @@ export default defineConfig({
     strictPort: true,
     // Allow Bonjour names like my-mac.local when the dev server is shared on the LAN (IPs are always allowed).
     allowedHosts: ['.local'],
-    proxy: smartThingsProxy,
+    proxy: apiProxy,
     watch: process.env.VITE_USE_POLLING === 'true' ? { usePolling: true, interval: 300 } : undefined,
   },
   preview: {
     port: 4173,
-    proxy: smartThingsProxy,
+    proxy: apiProxy,
   },
   build: {
     sourcemap: true,
@@ -51,7 +46,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: false,
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.test.{ts,tsx}'],
+    include: ['src/**/*.test.{ts,tsx}', 'server/**/*.test.ts'],
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],

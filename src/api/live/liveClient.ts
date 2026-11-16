@@ -17,8 +17,7 @@ import type {
 } from '../types';
 
 export interface LiveClientOptions {
-  token: string;
-  /** Same-origin proxy prefix that forwards to https://api.smartthings.com/v1 */
+  /** Same-origin prefix that the ThingsDeck server forwards to https://api.smartthings.com/v1 */
   baseUrl?: string;
   fetchImpl?: typeof fetch;
   /** Max parallel requests; keeps us well under per-device rate limits. */
@@ -29,17 +28,16 @@ const API_ORIGIN = 'https://api.smartthings.com/v1';
 
 export function defaultProxyBase() {
   const base = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '');
-  return `${base}/st-api`;
+  return `${base}/api/st`;
 }
 
 /**
- * Thin, dependency-free client for the SmartThings REST API, authenticated with
- * a personal access token. Requests go through a same-origin proxy (Vite in dev,
- * nginx in the Docker image) because the API does not allow browser CORS.
+ * Thin, dependency-free client for the SmartThings REST API. Requests go to the
+ * ThingsDeck server, which attaches the signed-in user's encrypted-at-rest token,
+ * so the browser never holds it and never needs CORS access to SmartThings.
  */
 export class LiveClient implements SmartThingsClient {
   readonly kind = 'live' as const;
-  private readonly token: string;
   private readonly baseUrl: string;
   private readonly fetchImpl: typeof fetch;
   private readonly requests = new Emitter<ApiLogEntry>();
@@ -48,8 +46,7 @@ export class LiveClient implements SmartThingsClient {
   private queue: Array<() => void> = [];
   private requestId = 0;
 
-  constructor(options: LiveClientOptions) {
-    this.token = options.token.trim();
+  constructor(options: LiveClientOptions = {}) {
     this.baseUrl = options.baseUrl ?? defaultProxyBase();
     this.fetchImpl = options.fetchImpl ?? ((...args) => fetch(...args));
     this.concurrency = options.concurrency ?? 4;
@@ -154,10 +151,11 @@ export class LiveClient implements SmartThingsClient {
         response = await this.fetchImpl(`${this.baseUrl}${path}`, {
           method,
           headers: {
-            Authorization: `Bearer ${this.token}`,
             Accept: 'application/json',
+            'X-Requested-With': 'thingsdeck',
             ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
           },
+          credentials: 'same-origin',
           ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
         });
       } catch (cause) {
@@ -170,7 +168,7 @@ export class LiveClient implements SmartThingsClient {
       if (!response.ok) {
         const message = extractMessage(data) ?? response.statusText ?? 'Request failed';
         this.log(id, method, path, response.status, started, message);
-        throw new ApiError(response.status, path, message);
+        throw new ApiError(response.status, path, message, extractCode(data));
       }
       this.log(id, method, path, response.status, started);
       return data as T;
@@ -222,6 +220,10 @@ function safeJson(text: string): unknown {
   } catch {
     return text;
   }
+}
+
+function extractCode(data: unknown): string | undefined {
+  return data && typeof data === 'object' ? (data as { error?: { code?: string } }).error?.code : undefined;
 }
 
 function extractMessage(data: unknown): string | undefined {

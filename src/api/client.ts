@@ -57,12 +57,15 @@ export interface SmartThingsClient {
 export class ApiError extends Error {
   readonly status: number;
   readonly path: string;
+  /** Machine-readable code from the ThingsDeck server, e.g. TOKEN_EXPIRED. */
+  readonly code?: string;
 
-  constructor(status: number, path: string, message: string) {
+  constructor(status: number, path: string, message: string, code?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.path = path;
+    this.code = code;
   }
 
   get isAuthError() {
@@ -76,13 +79,17 @@ export class ApiError extends Error {
 
 export function describeError(error: unknown): string {
   if (error instanceof ApiError) {
-    if (error.status === 401)
-      return 'Your token was rejected. Personal access tokens expire after 24 hours — create a new one in Settings.';
+    if (error.code === 'TOKEN_EXPIRED')
+      return 'Your SmartThings token has expired. Personal access tokens last 24 hours — paste a new one to continue.';
+    if (error.code === 'UNAUTHENTICATED') return 'Your ThingsDeck session ended. Please sign in again.';
+    if (error.code === 'TOKEN_MISSING') return 'Connect a SmartThings token to use live mode.';
+    // Other ThingsDeck server errors (bad credentials, closed sign-up…) carry their own wording.
+    if (error.code) return error.message;
+    if (error.status === 401) return 'SmartThings rejected the request. Try reconnecting your token.';
     if (error.status === 403) return 'This token is missing a required scope for that action.';
-    if (error.status === 429) return 'SmartThings rate limit reached. Give it a minute and try again.';
-    if (error.status === 0)
-      return 'Could not reach the SmartThings API. Live mode needs the dev server or Docker image proxy.';
-    return `${error.message} (HTTP ${error.status})`;
+    if (error.status === 429) return 'Too many requests. Give it a minute and try again.';
+    if (error.status === 0) return 'Could not reach the ThingsDeck server.';
+    return error.message;
   }
   if (error instanceof Error) return error.message;
   return 'Something went wrong.';

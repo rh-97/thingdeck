@@ -1,15 +1,14 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { local, session } from '@/lib/storage';
+import { local } from '@/lib/storage';
 
 export type DataMode = 'demo' | 'live';
 export type Theme = 'system' | 'light' | 'dark';
 export type TemperatureUnit = 'C' | 'F';
 
-export interface SettingsState {
+/** Preferences that are saved on the user's ThingsDeck account. */
+export interface SyncedPreferences {
   mode: DataMode;
-  token: string;
-  rememberToken: boolean;
   theme: Theme;
   temperatureUnit: TemperatureUnit;
   simulationSpeed: number;
@@ -19,10 +18,27 @@ export interface SettingsState {
   favorites: string[] | null;
   energyRate: number;
   currency: string;
+}
+
+export const SYNCED_KEYS = [
+  'mode',
+  'theme',
+  'temperatureUnit',
+  'simulationSpeed',
+  'failureRate',
+  'locationId',
+  'favorites',
+  'energyRate',
+  'currency',
+] as const satisfies ReadonlyArray<keyof SyncedPreferences>;
+
+export interface SettingsState extends SyncedPreferences {
+  /** True when the signed-in user has a SmartThings token the server accepts. */
+  liveReady: boolean;
+  /** Which account's preferences are loaded (null for the static demo build). */
+  hydratedUserId: number | null;
 
   setMode: (mode: DataMode) => void;
-  setToken: (token: string, remember: boolean) => void;
-  clearToken: () => void;
   setTheme: (theme: Theme) => void;
   setTemperatureUnit: (unit: TemperatureUnit) => void;
   setSimulationSpeed: (speed: number) => void;
@@ -30,35 +46,31 @@ export interface SettingsState {
   setLocationId: (id: string | null) => void;
   toggleFavorite: (deviceId: string, defaults: string[]) => void;
   setEnergyRate: (rate: number, currency?: string) => void;
+  setLiveReady: (ready: boolean) => void;
+  /** Replace preferences with the ones stored on an account. */
+  hydrate: (userId: number, prefs: Partial<SyncedPreferences>) => void;
 }
 
-const SESSION_TOKEN_KEY = 'thingsdeck.token';
+export const DEFAULT_PREFERENCES: SyncedPreferences = {
+  mode: 'demo',
+  theme: 'system',
+  temperatureUnit: 'C',
+  simulationSpeed: 1,
+  failureRate: 0,
+  locationId: null,
+  favorites: null,
+  energyRate: 0.18,
+  currency: '$',
+};
 
 export const useSettings = create<SettingsState>()(
   persist(
     (set, get) => ({
-      mode: 'demo',
-      token: session.get(SESSION_TOKEN_KEY) ?? '',
-      rememberToken: false,
-      theme: 'system',
-      temperatureUnit: 'C',
-      simulationSpeed: 1,
-      failureRate: 0,
-      locationId: null,
-      favorites: null,
-      energyRate: 0.18,
-      currency: '$',
+      ...DEFAULT_PREFERENCES,
+      liveReady: false,
+      hydratedUserId: null,
 
       setMode: (mode) => set({ mode, locationId: null }),
-      setToken: (token, remember) => {
-        if (remember) session.remove(SESSION_TOKEN_KEY);
-        else session.set(SESSION_TOKEN_KEY, token);
-        set({ token, rememberToken: remember });
-      },
-      clearToken: () => {
-        session.remove(SESSION_TOKEN_KEY);
-        set({ token: '', rememberToken: false, mode: 'demo', locationId: null });
-      },
       setTheme: (theme) => set({ theme }),
       setTemperatureUnit: (temperatureUnit) => set({ temperatureUnit }),
       setSimulationSpeed: (simulationSpeed) => set({ simulationSpeed }),
@@ -73,21 +85,20 @@ export const useSettings = create<SettingsState>()(
         });
       },
       setEnergyRate: (energyRate, currency) => set({ energyRate, ...(currency ? { currency } : {}) }),
+      setLiveReady: (liveReady) => set({ liveReady }),
+      hydrate: (userId, prefs) => set({ ...DEFAULT_PREFERENCES, ...prefs, hydratedUserId: userId }),
     }),
     {
       name: 'thingsdeck.settings',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => ({
         getItem: (key) => local.get(key),
         setItem: (key, value) => local.set(key, value),
         removeItem: (key) => local.remove(key),
       })),
-      // The token only reaches localStorage when the user explicitly opts in.
-      partialize: ({ token, rememberToken, ...rest }) => ({
-        ...rest,
-        rememberToken,
-        ...(rememberToken ? { token } : {}),
-      }),
+      // Only the theme is cached locally (to paint the right colours before sign-in);
+      // everything else lives on the account.
+      partialize: ({ theme }) => ({ theme }),
     },
   ),
 );

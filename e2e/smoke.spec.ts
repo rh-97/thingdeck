@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { signUp } from './helpers';
 
 test.describe('demo home', () => {
+  test.beforeEach(async ({ page }) => {
+    await signUp(page);
+  });
+
   test('dashboard shows the home at a glance', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Maple Street Home');

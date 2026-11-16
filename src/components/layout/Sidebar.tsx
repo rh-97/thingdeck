@@ -1,17 +1,21 @@
 import { NavLink } from 'react-router';
-import { FlaskConical, Radio } from 'lucide-react';
+import { FlaskConical, LogOut, Radio } from 'lucide-react';
 import { useCurrentLocation } from '@/hooks/queries';
 import { useSettings } from '@/store/settings';
+import { useMe, useSignOut } from '@/auth/hooks';
+import { STATIC_DEMO } from '@/lib/env';
 import { cn } from '@/lib/cn';
 import { Logo } from './Logo';
 import { NAV } from './nav';
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const mode = useSettings((s) => s.mode);
-  const token = useSettings((s) => s.token);
+  const liveReady = useSettings((s) => s.liveReady);
   const setLocationId = useSettings((s) => s.setLocationId);
   const { data: locations, locationId } = useCurrentLocation();
-  const live = mode === 'live' && !!token;
+  const live = mode === 'live' && liveReady;
+  const me = useMe(!STATIC_DEMO);
+  const signOut = useSignOut();
 
   return (
     <div className="flex h-full flex-col gap-4 p-4">
@@ -73,9 +77,29 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <p className="mt-1 text-muted">
           {live
             ? 'Connected with a personal access token.'
-            : 'Simulated devices — nothing leaves your browser.'}
+            : 'Simulated devices — nothing touches a real home.'}
         </p>
       </NavLink>
+
+      {me.data ? (
+        <div className="flex items-center gap-2 border-t border-line pt-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xs font-semibold text-accent uppercase">
+            {(me.data.user.name || me.data.user.email).slice(0, 1)}
+          </div>
+          <div className="min-w-0 flex-1 text-xs">
+            {me.data.user.name ? <div className="truncate font-medium">{me.data.user.name}</div> : null}
+            <div className="truncate text-muted">{me.data.user.email}</div>
+          </div>
+          <button
+            onClick={() => void signOut()}
+            className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-fg"
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,209 +1,53 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import {
   CheckCircle2,
-  ExternalLink,
   FlaskConical,
   KeyRound,
+  LogOut,
   Radio,
   RotateCcw,
   ShieldCheck,
+  Trash2,
+  UserRound,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { resetDemoClient, useClient } from '@/api/clientContext';
 import { describeError } from '@/api/client';
-import { LiveClient } from '@/api/live/liveClient';
+import { authApi } from '@/auth/api';
+import { ConnectSmartThings } from '@/auth/ConnectSmartThings';
+import { meKey, useMe, useSignOut } from '@/auth/hooks';
 import { useSettings } from '@/store/settings';
 import { toast } from '@/store/toasts';
+import { STATIC_DEMO } from '@/lib/env';
+import { timeAgo } from '@/lib/time';
 import { cn } from '@/lib/cn';
 import { PageHeader } from '@/components/PageHeader';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
+import { Dialog } from '@/components/ui/Dialog';
 import { Field, Input } from '@/components/ui/Field';
 import { Segmented } from '@/components/ui/Segmented';
-
-/** Static hosts (GitHub Pages) have no API proxy, so live mode can't work there. */
-const STATIC_DEMO = import.meta.env.VITE_STATIC_DEMO === 'true';
-
-const SCOPES = [
-  'r:devices:*',
-  'x:devices:*',
-  'r:locations:*',
-  'x:locations:*',
-  'r:scenes:*',
-  'x:scenes:*',
-  'r:rules:*',
-  'w:rules:*',
-];
 
 export default function SettingsPage() {
   const settings = useSettings();
   const client = useClient();
-  const [draft, setDraft] = useState(settings.token);
-  const [remember, setRemember] = useState(settings.rememberToken);
-  const [testing, setTesting] = useState(false);
-  const [verified, setVerified] = useState<string | null>(null);
-
-  const connect = async () => {
-    setTesting(true);
-    setVerified(null);
-    try {
-      const locations = await new LiveClient({ token: draft }).listLocations();
-      setVerified(
-        `Found ${locations.length} location${locations.length === 1 ? '' : 's'}: ${locations.map((l) => l.name).join(', ')}`,
-      );
-      settings.setToken(draft, remember);
-      settings.setMode('live');
-      toast.success('Connected to SmartThings');
-    } catch (error) {
-      toast.error('Connection failed', describeError(error));
-    } finally {
-      setTesting(false);
-    }
-  };
 
   return (
     <div className="max-w-3xl space-y-6">
       <PageHeader
         title="Settings"
-        description="Choose a data source, tune the demo, and set display preferences."
+        description="Your data source, SmartThings connection, display and account."
       />
 
-      <Card>
-        <CardHeader title="Data source" description="Everything works the same in both modes." />
-        <div className="grid gap-3 px-5 pb-5 sm:grid-cols-2">
-          {(
-            [
-              {
-                id: 'demo',
-                icon: FlaskConical,
-                title: 'Demo home',
-                body: 'A simulated two-location home with 27 devices. Runs entirely in your browser.',
-              },
-              {
-                id: 'live',
-                icon: Radio,
-                title: 'My SmartThings',
-                body: 'Your real devices via a personal access token. Requires the dev server or Docker proxy.',
-              },
-            ] as const
-          ).map((option) => {
-            const selected = settings.mode === option.id;
-            const Icon = option.icon;
-            return (
-              <button
-                key={option.id}
-                aria-pressed={selected}
-                disabled={option.id === 'live' && STATIC_DEMO}
-                onClick={() => {
-                  if (option.id === 'live' && !settings.token) {
-                    document.getElementById('token')?.focus();
-                    toast.info('Add a token first', 'Paste a personal access token below and press Connect.');
-                    return;
-                  }
-                  settings.setMode(option.id);
-                }}
-                className={cn(
-                  'rounded-xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-50',
-                  selected ? 'border-accent bg-accent-soft' : 'border-line hover:border-accent/40',
-                )}
-              >
-                <div className="flex items-center gap-2 font-semibold">
-                  <Icon className={cn('h-4 w-4', selected ? 'text-accent' : 'text-muted')} /> {option.title}
-                  {selected ? <CheckCircle2 className="ml-auto h-4 w-4 text-accent" /> : null}
-                </div>
-                <p className="mt-1 text-sm text-muted">{option.body}</p>
-              </button>
-            );
-          })}
-        </div>
-      </Card>
-
+      <DataSourceCard />
       {STATIC_DEMO ? (
         <Card className="p-5 text-sm text-muted">
-          This hosted copy is demo-only: browsers can&apos;t call the SmartThings API directly, so live mode
-          needs the local dev server or the Docker image, which proxy requests for you. See the README to run
-          it locally.
+          This hosted copy is demo-only: it has no ThingsDeck server, so it can&apos;t hold accounts or talk
+          to SmartThings. Run it with Docker to use live mode — see the README.
         </Card>
       ) : (
-        <Card>
-          <CardHeader
-            title={
-              <span className="flex items-center gap-2">
-                <KeyRound className="h-4 w-4" /> Personal access token
-              </span>
-            }
-            description="Free to create; no paid SmartThings Developer Plan needed for personal tokens."
-          />
-          <div className="space-y-4 px-5 pb-5">
-            <ol className="list-decimal space-y-1 pl-5 text-sm text-muted">
-              <li>
-                Open{' '}
-                <a
-                  className="inline-flex items-center gap-1 font-medium text-accent hover:underline"
-                  href="https://account.smartthings.com/tokens"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                >
-                  account.smartthings.com/tokens <ExternalLink className="h-3 w-3" />
-                </a>{' '}
-                and generate a token.
-              </li>
-              <li>
-                Grant these scopes: <span className="font-mono text-xs">{SCOPES.join(' ')}</span>
-              </li>
-              <li>Paste it below. New tokens expire after 24 hours, so you may need to repeat this.</li>
-            </ol>
-            <Field
-              label="Token"
-              htmlFor="token"
-              hint="Sent only to api.smartthings.com through the local proxy. Never logged."
-            >
-              <Input
-                id="token"
-                type="password"
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                value={draft}
-                onChange={(e) => {
-                  setDraft(e.target.value);
-                  setVerified(null);
-                }}
-              />
-            </Field>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="h-4 w-4 accent-[var(--accent)]"
-              />
-              Remember on this device (otherwise it's forgotten when the tab closes)
-            </label>
-            {verified ? (
-              <p className="flex items-center gap-2 text-sm text-good">
-                <ShieldCheck className="h-4 w-4" /> {verified}
-              </p>
-            ) : null}
-            <div className="flex flex-wrap gap-2">
-              <Button variant="primary" onClick={connect} loading={testing} disabled={!draft.trim()}>
-                Connect
-              </Button>
-              {settings.token ? (
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    settings.clearToken();
-                    setDraft('');
-                    setVerified(null);
-                    toast.info('Token removed', 'Switched back to the demo home.');
-                  }}
-                >
-                  Forget token
-                </Button>
-              ) : null}
-            </div>
-          </div>
-        </Card>
+        <ConnectionCard />
       )}
 
       <Card>
@@ -285,10 +129,266 @@ export default function SettingsPage() {
         </div>
       </Card>
 
+      {STATIC_DEMO ? null : <AccountCard />}
+
       <p className="pb-4 text-xs text-subtle">
         ThingsDeck is an independent open-source project. It is not affiliated with, endorsed by, or sponsored
         by Samsung or SmartThings. SmartThings is a trademark of its respective owner.
       </p>
     </div>
+  );
+}
+
+function DataSourceCard() {
+  const mode = useSettings((s) => s.mode);
+  const setMode = useSettings((s) => s.setMode);
+  const liveReady = useSettings((s) => s.liveReady);
+
+  const options = [
+    {
+      id: 'demo',
+      icon: FlaskConical,
+      title: 'Demo home',
+      body: 'A simulated two-location home with 27 devices. Nothing touches a real home.',
+    },
+    {
+      id: 'live',
+      icon: Radio,
+      title: 'My SmartThings',
+      body: 'Your real devices through your SmartThings personal access token.',
+    },
+  ] as const;
+
+  return (
+    <Card>
+      <CardHeader
+        title="Data source"
+        description="Remembered on your account. Everything works the same in both modes."
+      />
+      <div className="grid gap-3 px-5 pb-5 sm:grid-cols-2">
+        {options.map((option) => {
+          const selected = mode === option.id;
+          const Icon = option.icon;
+          return (
+            <button
+              key={option.id}
+              aria-pressed={selected}
+              disabled={option.id === 'live' && STATIC_DEMO}
+              onClick={() => {
+                if (option.id === 'live' && !liveReady) {
+                  document.getElementById('st-token')?.focus();
+                  toast.info('Connect SmartThings first', 'Paste a personal access token below.');
+                  return;
+                }
+                setMode(option.id);
+              }}
+              className={cn(
+                'rounded-xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-50',
+                selected ? 'border-accent bg-accent-soft' : 'border-line hover:border-accent/40',
+              )}
+            >
+              <div className="flex items-center gap-2 font-semibold">
+                <Icon className={cn('h-4 w-4', selected ? 'text-accent' : 'text-muted')} /> {option.title}
+                {selected ? <CheckCircle2 className="ml-auto h-4 w-4 text-accent" /> : null}
+              </div>
+              <p className="mt-1 text-sm text-muted">{option.body}</p>
+            </button>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+function ConnectionCard() {
+  const me = useMe();
+  const queryClient = useQueryClient();
+  const mode = useSettings((s) => s.mode);
+  const setMode = useSettings((s) => s.setMode);
+  const live = me.data?.live;
+
+  const disconnect = async () => {
+    try {
+      await authApi.deleteToken();
+      if (mode === 'live') setMode('demo');
+      await queryClient.invalidateQueries({ queryKey: meKey });
+      toast.info('SmartThings disconnected', 'Your token was deleted from the server.');
+    } catch (error) {
+      toast.error("Couldn't disconnect", describeError(error));
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader
+        title={
+          <span className="flex items-center gap-2">
+            <KeyRound className="h-4 w-4" /> SmartThings connection
+          </span>
+        }
+        description="Free personal access token — no paid SmartThings Developer Plan needed."
+        action={
+          live?.connected ? (
+            <Badge tone={live.status === 'valid' ? 'good' : 'warn'}>
+              {live.status === 'valid' ? 'Connected' : 'Expired'}
+            </Badge>
+          ) : (
+            <Badge>Not connected</Badge>
+          )
+        }
+      />
+      <div className="space-y-5 px-5 pb-5">
+        {live?.connected ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-2 p-4 text-sm">
+            <div className="flex items-start gap-2">
+              <ShieldCheck
+                className={cn('mt-0.5 h-4 w-4', live.status === 'valid' ? 'text-good' : 'text-warn')}
+              />
+              <div>
+                <p className="font-medium">
+                  {live.status === 'valid'
+                    ? 'Token stored, encrypted on the server'
+                    : 'Token expired — paste a new one'}
+                </p>
+                <p className="text-xs text-muted">
+                  Saved {timeAgo(live.savedAt)} · personal tokens usually expire{' '}
+                  {new Date(live.likelyExpiresAt).toLocaleString([], {
+                    weekday: 'short',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}
+                </p>
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => void disconnect()}>
+              Disconnect
+            </Button>
+          </div>
+        ) : null}
+        <ConnectSmartThings submitLabel={live?.connected ? 'Replace token' : 'Connect'} />
+      </div>
+    </Card>
+  );
+}
+
+function AccountCard() {
+  const me = useMe();
+  const signOut = useSignOut();
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const changePassword = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await authApi.changePassword(current, next);
+      setCurrent('');
+      setNext('');
+      toast.success('Password changed', 'Other devices have been signed out.');
+    } catch (error) {
+      toast.error("Couldn't change password", describeError(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!me.data) return null;
+  const { user } = me.data;
+
+  return (
+    <Card>
+      <CardHeader
+        title={
+          <span className="flex items-center gap-2">
+            <UserRound className="h-4 w-4" /> Account
+          </span>
+        }
+        description={`Signed in as ${user.email}${user.name ? ` (${user.name})` : ''} · member since ${new Date(user.createdAt).toLocaleDateString()}`}
+        action={
+          <Button variant="outline" size="sm" onClick={() => void signOut()}>
+            <LogOut className="h-3.5 w-3.5" /> Sign out
+          </Button>
+        }
+      />
+      <form onSubmit={changePassword} className="grid gap-4 px-5 pb-5 sm:grid-cols-2">
+        <Field label="Current password" htmlFor="current-password">
+          <Input
+            id="current-password"
+            type="password"
+            autoComplete="current-password"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+          />
+        </Field>
+        <Field label="New password" htmlFor="new-password" hint="At least 8 characters.">
+          <Input
+            id="new-password"
+            type="password"
+            autoComplete="new-password"
+            value={next}
+            onChange={(e) => setNext(e.target.value)}
+          />
+        </Field>
+        <div className="flex flex-wrap justify-between gap-2 sm:col-span-2">
+          <Button type="submit" variant="secondary" loading={busy} disabled={!current || next.length < 8}>
+            Change password
+          </Button>
+          <Button type="button" variant="ghost" className="text-bad" onClick={() => setDeleting(true)}>
+            <Trash2 className="h-4 w-4" /> Delete account
+          </Button>
+        </div>
+      </form>
+      <DeleteAccountDialog open={deleting} onClose={() => setDeleting(false)} />
+    </Card>
+  );
+}
+
+function DeleteAccountDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const signOut = useSignOut();
+
+  const confirm = async () => {
+    setBusy(true);
+    try {
+      await authApi.deleteAccount(password);
+      toast.info('Account deleted');
+      await signOut();
+    } catch (error) {
+      toast.error("Couldn't delete account", describeError(error));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title="Delete your account?"
+      description="Your preferences and stored SmartThings token are erased. This can't be undone."
+      size="sm"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="danger" loading={busy} disabled={!password} onClick={() => void confirm()}>
+            Delete account
+          </Button>
+        </>
+      }
+    >
+      <Field label="Confirm with your password" htmlFor="delete-password">
+        <Input
+          id="delete-password"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+      </Field>
+    </Dialog>
   );
 }

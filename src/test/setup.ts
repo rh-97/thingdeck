@@ -5,7 +5,7 @@ import { cleanup } from '@testing-library/react';
 afterEach(() => cleanup());
 
 // jsdom lacks matchMedia and ResizeObserver; charts and theme code use them.
-if (!window.matchMedia) {
+if (typeof window !== 'undefined' && !window.matchMedia) {
   window.matchMedia = (query: string) =>
     ({
       matches: false,
@@ -18,7 +18,7 @@ if (!window.matchMedia) {
       dispatchEvent: () => false,
     }) as MediaQueryList;
 }
-if (!('ResizeObserver' in window)) {
+if (typeof window !== 'undefined' && !('ResizeObserver' in window)) {
   (window as unknown as { ResizeObserver: unknown }).ResizeObserver = class {
     observe() {}
     unobserve() {}

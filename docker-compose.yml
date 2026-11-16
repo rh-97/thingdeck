@@ -14,9 +14,24 @@ services:
     volumes:
       - .:/app
       - node_modules:/app/node_modules
+    depends_on: [server]
     environment:
       # Docker Desktop bind mounts can miss fs events; polling keeps HMR reliable.
       - VITE_USE_POLLING=${VITE_USE_POLLING:-true}
+      - VITE_API_TARGET=http://server:3000
+
+  # Account/session API for `make dev`, restarted automatically when server/ changes.
+  server:
+    image: thingsdeck-dev
+    command: ['node', '--watch-path=server', '--disable-warning=ExperimentalWarning', 'server/index.ts']
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - dev_data:/data
+    environment:
+      - DATA_DIR=/data
+      - THINGSDECK_SECRET=${THINGSDECK_SECRET:-}
+      - THINGSDECK_SIGNUP=${THINGSDECK_SIGNUP:-open}
 
   e2e:
     profiles: ['e2e']
@@ -39,8 +54,27 @@ services:
       context: .
       target: prod
     image: thingsdeck
+    depends_on: [api]
+    restart: unless-stopped
     ports:
       - '${THINGSDECK_BIND:-127.0.0.1}:${THINGSDECK_PROD_PORT:-8080}:8080'
 
+  # Production account/session API (not exposed; nginx forwards /api to it).
+  api:
+    profiles: ['prod']
+    build:
+      context: .
+      target: server
+    image: thingsdeck-server
+    restart: unless-stopped
+    volumes:
+      - data:/data
+    environment:
+      - THINGSDECK_SECRET=${THINGSDECK_SECRET:-}
+      - THINGSDECK_SIGNUP=${THINGSDECK_SIGNUP:-open}
+
 volumes:
   node_modules:
+  # Accounts, sessions and encrypted tokens. Back these up.
+  data:
+  dev_data:

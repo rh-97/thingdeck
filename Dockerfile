@@ -23,7 +23,25 @@ ARG VITE_BASE=/
 ENV VITE_BASE=${VITE_BASE}
 RUN npm run build
 
-# ---------- prod: tiny nginx image serving the bundle + SmartThings API proxy ----------
+# ---------- server: account/session API + SmartThings proxy (Node runs the TypeScript directly) ----------
+FROM base AS server-deps
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+FROM node:24-bookworm-slim AS server
+WORKDIR /app
+ENV NODE_ENV=production DATA_DIR=/data PORT=3000
+COPY --from=server-deps /app/node_modules ./node_modules
+COPY package.json ./
+COPY server ./server
+RUN mkdir -p /data && chown node:node /data
+USER node
+VOLUME ["/data"]
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=3s CMD node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["node", "--disable-warning=ExperimentalWarning", "server/index.ts"]
+
+# ---------- prod: tiny nginx image serving the bundle and forwarding /api to the server ----------
 FROM nginx:1.29-alpine AS prod
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html

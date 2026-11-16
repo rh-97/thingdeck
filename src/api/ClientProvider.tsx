@@ -14,7 +14,7 @@ export function ClientProvider({
   client?: SmartThingsClient;
 }) {
   const mode = useSettings((s) => s.mode);
-  const token = useSettings((s) => s.token);
+  const liveReady = useSettings((s) => s.liveReady);
   const speed = useSettings((s) => s.simulationSpeed);
   const failureRate = useSettings((s) => s.failureRate);
   const demoVersion = useDemoVersion((s) => s.version);
@@ -22,10 +22,10 @@ export function ClientProvider({
 
   const client = useMemo<SmartThingsClient>(() => {
     if (override) return override;
-    if (mode === 'live' && token) return new LiveClient({ token });
+    if (mode === 'live' && liveReady) return new LiveClient();
     void demoVersion;
     return getDemoClient();
-  }, [override, mode, token, demoVersion]);
+  }, [override, mode, liveReady, demoVersion]);
 
   // Reset cached data whenever the backend changes so screens never mix homes.
   // (Skipped on first mount, where it would orphan the initial requests.)
